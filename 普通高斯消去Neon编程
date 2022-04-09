@@ -4,7 +4,7 @@
 #include<unistd.h>
 #include <cstdlib>
 using namespace std;
-const int N=4096;
+const int N=4000;
 float m[N][N];
 void m_reset()
  {
