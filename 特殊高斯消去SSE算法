@@ -1,0 +1,149 @@
+#include <iostream>
+#include<fstream>
+#include<sstream>
+#include <windows.h>
+#include <stdlib .h>
+
+#include<xmmintrin.h> 
+
+using namespace std;
+const int n=453;
+const int N=2362;
+
+int E[n][N];
+int R[N][N];
+int lp_E[n];
+
+void read( )
+{
+    //读入被消元行信息
+
+    ifstream myfile1("/home/data/Groebner/5_2362_1226_453/2.txt");
+    if (!myfile1.is_open())
+    {
+        cout << "can't open file:2.txt" << endl;
+    }
+    for(int i=0;i<n;i++)
+    {
+        for(int j=0;j<N;j++)
+        {
+            E[i][j]=0;
+        }
+    }
+    int i=0;
+    string line;
+    while(getline(myfile1,line))
+    {
+        stringstream ss(line);
+        int x,count=0;
+        while(ss>>x)
+        {
+            if(count==0)
+            {
+                lp_E[i]=x;
+            }
+            E[i][N-x-1]=1;
+            count++;
+        }
+        i++;
+    }
+    myfile1.close();
+
+    //读入消元子信息
+    ifstream myfile("/home/data/Groebner/5_2362_1226_453/1.txt");
+    if (!myfile.is_open())
+    {
+        cout << "can't open file:1.txt" << endl;
+    }
+    for(int i=0;i<N;i++)
+    {
+        for(int j=0;j<N;j++)
+            R[i][j]=-1;
+    }
+    string line1;
+    while(getline(myfile,line1))
+    {
+        stringstream ss(line1);
+        int x,count=0,y;
+        while(ss>>x)
+        {
+            if(count==0)
+            {
+                y=x;
+                for(int i=0;i<N;i++)
+                {
+                    R[N-y-1][i]=0;
+                }
+            }
+            R[N-y-1][N-x-1]=1;
+            count++;
+        }
+    }
+    myfile.close();
+
+}
+void func()
+{
+    for(int i=0;i<n;i++)
+    {
+        while(lp_E[i]!=-1)
+        {
+            int temp=-1;
+            if(R[N-lp_E[i]-1][0]!=-1)
+            {
+                int j;
+                for(j=0;j+4<N;j+=4)
+                {
+                     __m128i va= _mm_loadu_si64(&E[i][j]);
+                     __m128i vt= _mm_loadu_si64(&R[N-lp_E[i]-1][j]);
+                    va= _mm_xor_si128(va,vt);
+                    _mm_storeu_si64(&E[i][j],va);
+                }
+                for(;j<N;j++)
+                {
+                    E[i][j]=E[i][j]^R[N-lp_E[i]-1][j];
+                }
+                for(int k=0;k<N;k++)
+                {
+                    if(E[i][k]==1)
+                    {
+                        lp_E[i]=N-k-1;
+                        temp=k;
+                        break;
+                    }
+                }
+                if(temp==-1)
+                    lp_E[i]=-1;
+            }
+            else
+            {
+                int j;
+                for(j=0;j+4<N;j+=4)
+                {
+                    __m128i va=_mm_loadu_si64(&E[i][j]);
+                    _mm_storeu_si64(&R[N-lp_E[i]-1][j],va);
+                }
+                for(;j<N;j++)
+                {
+                    R[N-lp_E[i]-1][j]=E[i][j];
+                }
+                lp_E[i]=-1;
+                break;
+
+            }
+        }
+    }
+
+}
+int main()
+{
+    read();
+   long long head, tail , freq ;
+   QueryPerformanceFrequency((LARGE_INTEGER ∗)&freq );
+   QueryPerformanceCounter((LARGE_INTEGER ∗)&head);
+
+    func();
+   QueryPerformanceCounter((LARGE_INTEGER ∗)&tail );
+    cout<<"SSE_time:"<<( tail − head) ∗ 1000.0 / freq<<endl;
+}
+
